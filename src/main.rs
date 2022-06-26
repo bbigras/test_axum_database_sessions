@@ -1,4 +1,4 @@
-use axum::{routing::get, Router};
+use axum::{response::Redirect, routing::get, Router};
 use axum_database_sessions::{AxumSession, AxumSessionConfig, AxumSessionLayer, AxumSessionStore};
 use sqlx::postgres::PgPoolOptions;
 use std::net::SocketAddr;
@@ -16,7 +16,8 @@ async fn main() {
 
     // build our application with some routes
     let app = Router::new()
-        .route("/greet", get(greet))
+        .route("/", get(greet))
+        .route("/redirect", get(redirect))
         .layer(AxumSessionLayer::new(session_store));
 
     // run it
@@ -28,8 +29,15 @@ async fn main() {
         .unwrap();
 }
 
+async fn redirect(session: AxumSession) -> Redirect {
+    let count = -10;
+    session.set("count", count).await;
+
+    Redirect::to("/")
+}
+
 async fn greet(session: AxumSession) -> String {
-    let mut count: usize = session.get("count").await.unwrap_or(0);
+    let mut count: usize = dbg!(session.get("count").await).unwrap_or(0);
 
     count += 1;
     session.set("count", count).await;
