@@ -18,6 +18,7 @@ async fn main() {
     let app = Router::new()
         .route("/", get(greet))
         .route("/redirect", get(redirect))
+        .route("/logout", get(handler_logout))
         .layer(AxumSessionLayer::new(session_store));
 
     // run it
@@ -30,19 +31,28 @@ async fn main() {
 }
 
 async fn redirect(session: AxumSession) -> Redirect {
-    let count = -10;
-    session.set("count", count).await;
+    let user = "redirect".to_string();
+    session.set("user", user).await;
+
+    Redirect::to("/")
+}
+
+async fn handler_logout(session: AxumSession) -> Redirect {
+    println!("logout");
+    // session.clear_all().await;
+    // session.remove("user-id").await;
+    session.destroy().await;
 
     Redirect::to("/")
 }
 
 async fn greet(session: AxumSession) -> String {
-    let mut count: usize = dbg!(session.get("count").await).unwrap_or(0);
+    let mut user: String = dbg!(session.get("user").await).unwrap_or_else(|| String::new());
 
-    count += 1;
-    session.set("count", count).await;
+    user += "a";
+    session.set("user", &user).await;
 
-    count.to_string()
+    user
 }
 
 async fn connect_to_database() -> anyhow::Result<sqlx::Pool<sqlx::Postgres>> {
